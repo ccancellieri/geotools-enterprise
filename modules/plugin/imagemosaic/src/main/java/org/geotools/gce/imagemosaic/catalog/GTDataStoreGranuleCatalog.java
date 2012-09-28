@@ -16,8 +16,10 @@
  */
 package org.geotools.gce.imagemosaic.catalog;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -138,6 +140,17 @@ class GTDataStoreGranuleCatalog extends AbstractGranuleCatalog {
 			Object heterogen = params.get("Heterogeneous");
 			if (heterogen != null){
 			    this.heterogeneous = ((Boolean) heterogen).booleanValue();
+			}
+			
+			// H2 workadound
+			if(spi instanceof H2DataStoreFactory || spi instanceof H2JNDIDataStoreFactory){
+				if(params.containsKey(H2DataStoreFactory.DATABASE.key)){
+					String dbname = (String) params.get(H2DataStoreFactory.DATABASE.key);
+					// H2 database URLs must not be percent-encoded: see GEOT-4262.
+					params.put(H2DataStoreFactory.DATABASE.key,
+					        "file:" + (new File(DataUtilities.urlToFile(new URL(parentLocation)),
+					                        dbname)).getPath());
+				}
 			}
 			
 			// creating a store, this might imply creating it for an existing underlying store or 

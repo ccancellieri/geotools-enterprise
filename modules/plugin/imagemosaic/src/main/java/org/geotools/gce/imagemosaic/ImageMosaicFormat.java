@@ -338,6 +338,16 @@ public final class ImageMosaicFormat extends AbstractGridFormat implements Forma
     							return false;
     						}
     				}						
+    				// H2 workadound
+    				if(spi instanceof H2DataStoreFactory || spi instanceof H2JNDIDataStoreFactory){
+    					if(params.containsKey(H2DataStoreFactory.DATABASE.key)){
+    						String dbname = (String) params.get(H2DataStoreFactory.DATABASE.key);
+    						// H2 database URLs must not be percent-encoded: see GEOT-4262.
+    						params.put(H2DataStoreFactory.DATABASE.key,
+    						        "file:" + (new File(sourceF.getParentFile(), dbname)).getPath());
+    					}
+    				}   
+    				
     				tileIndexStore=spi.createDataStore(params);
         			if(tileIndexStore==null)
         				return false;

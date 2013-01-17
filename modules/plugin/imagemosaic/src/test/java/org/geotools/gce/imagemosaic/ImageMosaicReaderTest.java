@@ -16,16 +16,16 @@
  */
 package org.geotools.gce.imagemosaic;
 
-import it.geosolutions.imageio.utilities.ImageIOUtilities;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
@@ -39,13 +39,12 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.logging.Logger;
 
-import javax.media.jai.PlanarImage;
-import javax.swing.JFrame;
-
 import junit.framework.JUnit4TestAdapter;
 import junit.textui.TestRunner;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridEnvelope2D;
@@ -54,18 +53,19 @@ import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.coverage.grid.io.GridFormatFinder;
 import org.geotools.coverage.grid.io.OverviewPolicy;
-import org.geotools.coverage.grid.io.UnknownFormat;
 import org.geotools.factory.Hints;
 import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.GeneralEnvelope;
-import org.geotools.parameter.Parameter;
 import org.geotools.referencing.CRS;
 import org.geotools.test.TestData;
 import org.geotools.util.DateRange;
 import org.geotools.util.NumberRange;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opengis.geometry.Envelope;
 import org.opengis.geometry.MismatchedDimensionException;
@@ -110,8 +110,8 @@ public class ImageMosaicReaderTest extends Assert{
 	private URL rgbAURL;
 
 	private URL overviewURL;
-	
-	private boolean interactive;
+
+	static boolean INTERACTIVE;
 
 	private URL timeURL;
 
@@ -131,23 +131,18 @@ public class ImageMosaicReaderTest extends Assert{
 	public void crop() throws MismatchedDimensionException, IOException,
 			FactoryException {
 		imageMosaicCropTest(rgbURL, "crop-rgbURL");
-//		imageMosaicCropTest(rgbJarURL, "crop-rgbJarURL");
 		
 		imageMosaicCropTest(indexURL, "crop-indexURL");
-//		imageMosaicCropTest(indexJarURL, "crop-indexJarURL");
 		
 		imageMosaicCropTest(grayURL, "crop-grayURL");
-//		imageMosaicCropTest(grayJarURL, "crop-grayJarURL");
 		
 		imageMosaicCropTest(overviewURL, "crop-overviewURL");
 		
 		imageMosaicCropTest(indexAlphaURL, "crop-indexAlphaURL");
-//		imageMosaicCropTest(indexAlphaJarURL, "crop-indexAlphaJarURL");
 		
 		imageMosaicCropTest(rgbAURL, "crop-rgbAURL");
 		
 		imageMosaicCropTest(index_unique_paletteAlphaURL,"crop-index_unique_paletteAlphaURL");
-//		imageMosaicCropTest(index_unique_paletteAlphaJarURL,"crop-index_unique_paletteAlphaJarURL");
 
 	}
 
@@ -160,20 +155,20 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws FactoryException 
 	 */
 	@Test
-//        @Ignore	
+        @Ignore	
 	public void alpha() throws IOException,
 			MismatchedDimensionException, FactoryException {
 		
 		final String testName="alpha-";
-		if (interactive)
+		if (INTERACTIVE)
 			imageMosaicSimpleParamsTest(rgbURL, null, null,testName+rgbURL.getFile()+"-original", false);
 		imageMosaicSimpleParamsTest(rgbURL, Color.black,Color.black,testName+rgbURL.getFile(), false);
 
-//		if (interactive)
+//		if (INTERACTIVE)
 //			imageMosaicSimpleParamsTest(rgbJarURL, null, null,testName+rgbJarURL.getFile()+"-original", false);
 //		imageMosaicSimpleParamsTest(rgbJarURL, Color.black,Color.black,testName+rgbURL.getFile(), false);
 
-		if (interactive)
+		if (INTERACTIVE)
 			// the input images have transparency and they do overlap, we need
 			// to ask for blending mosaic.
 			imageMosaicSimpleParamsTest(rgbAURL, null, null,testName+rgbAURL.getFile()+"-original", true);
@@ -190,34 +185,34 @@ public class ImageMosaicReaderTest extends Assert{
 		// background will be transparent.
 		//
 		// //
-		if (interactive)
+		if (INTERACTIVE)
 			imageMosaicSimpleParamsTest(indexURL, null, null,testName+indexURL.getFile()+"-original", false);
 		imageMosaicSimpleParamsTest(indexURL, new Color(58, 49, 8),Color.black,testName+indexURL.getFile(), false);
 
-//		if (interactive)
+//		if (INTERACTIVE)
 //			imageMosaicSimpleParamsTest(indexJarURL, null, null,testName+indexJarURL.getFile()+"-original", false);
 //		imageMosaicSimpleParamsTest(indexJarURL, new Color(58, 49, 8),Color.black,testName+indexJarURL.getFile(), false);
 		
 		
-		if (interactive)
+		if (INTERACTIVE)
 			imageMosaicSimpleParamsTest(overviewURL, null, null,testName+overviewURL.getFile()+"-original", false);
 		imageMosaicSimpleParamsTest(overviewURL, new Color(58, 49, 8),Color.black,testName+overviewURL.getFile()+"-indexURL", false);		
 		
 		
-		if (interactive)
+		if (INTERACTIVE)
 			imageMosaicSimpleParamsTest(indexAlphaURL, null, null,testName+indexAlphaURL.getFile()+"-original", false);
 		imageMosaicSimpleParamsTest(indexAlphaURL, new Color(41,41, 33), Color.black,testName+indexAlphaURL.getFile(), false);
 
-//		if (interactive)
+//		if (INTERACTIVE)
 //			imageMosaicSimpleParamsTest(indexAlphaJarURL, null, null,testName+indexAlphaJarURL.getFile()+"-original", false);
 //		imageMosaicSimpleParamsTest(indexAlphaJarURL, new Color(41,41, 33), Color.black,testName+indexAlphaJarURL.getFile(), false);
 		
 		
-		if (interactive)
+		if (INTERACTIVE)
 			imageMosaicSimpleParamsTest(grayURL, null, null,testName+grayURL.getFile()+"-original", false);
 		imageMosaicSimpleParamsTest(grayURL, Color.black,Color.black, testName+grayURL.getFile(), false);
 		
-//		if (interactive)
+//		if (INTERACTIVE)
 //			imageMosaicSimpleParamsTest(grayJarURL, null, null,testName+grayJarURL.getFile()+"-original", false);
 //		imageMosaicSimpleParamsTest(grayJarURL, Color.black,Color.black, testName+grayJarURL.getFile(), false);
 
@@ -236,8 +231,8 @@ public class ImageMosaicReaderTest extends Assert{
 //	@Ignore
 	public void overviews() throws IOException,	
 			MismatchedDimensionException, FactoryException {
-		final AbstractGridFormat format = getFormat(overviewURL);
-		final ImageMosaicReader reader = getReader(overviewURL, format);
+		final AbstractGridFormat format = TestUtils.getFormat(overviewURL);
+		final ImageMosaicReader reader = TestUtils.getReader(overviewURL, format);
 
 		// limit yourself to reading just a bit of it
 		final ParameterValue<GridGeometry2D> gg =  AbstractGridFormat.READ_GRIDGEOMETRY2D.createValue();
@@ -257,28 +252,49 @@ public class ImageMosaicReaderTest extends Assert{
 		tileSize.setValue("128,128");
 		
 		// Test the output coverage
-		checkCoverage(reader, new GeneralParameterValue[] {gg,useJai ,tileSize}, "overviews test");
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] {gg,useJai ,tileSize}, "overviews test");
 	}	
 	
-	/**
-	 * 
-	 * @throws IOException
-	 * @throws ParseException 
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 * @throws MismatchedDimensionException
-	 * @throws NoSuchAuthorityCodeException
-	 */
 	@Test
-//        @Ignore	
-	public void timeElevation() throws IOException, ParseException, NoSuchAuthorityCodeException, FactoryException {
-	        TestData.unzipFile(this, "ensmean.zip");
-	        final URL timeElevURL = TestData.url(this, "ensmean");
-	        System.setProperty("org.geotools.shapefile.datetime", "true");
-		final AbstractGridFormat format = getFormat(timeElevURL);
+	public void timeElevationH2() throws Exception {
+	    
+    	final File workDir=new File(TestData.file(this, "."),"water temp3");
+        if(!workDir.mkdir()){
+            FileUtils.deleteDirectory(workDir);
+            assertTrue("Unable to create workdir:"+workDir,workDir.mkdir());
+        }
+    	FileUtils.copyFile(TestData.file(this, "watertemp.zip"), new File(workDir,"watertemp.zip"));
+    	TestData.unzipFile(this, "water temp3/watertemp.zip");
+	    final URL timeElevURL = TestData.url(this, "water temp3");
+	    
+	    //place H2 file in the dir
+	    FileWriter out=null;
+	    try{
+	    	out = new FileWriter(new File(TestData.file(this, "."),"/water temp3/datastore.properties"));
+	    	out.write("SPI=org.geotools.data.h2.H2DataStoreFactory\n");
+	    	out.write("database=imagemosaic\n");
+	    	out.write("dbtype=h2\n");
+	    	out.write("Loose\\ bbox=true #important for performances\n");
+	    	out.write("Estimated\\ extends=false #important for performances\n");
+	    	out.write("user=geosolutions\n");
+	    	out.write("passwd=fucktheworld\n");
+	    	out.write("validate \\connections=true #important for avoiding errors\n");
+	    	out.write("Connection\\ timeout=3600\n");
+	    	out.write("max \\connections=10 #important for performances, internal pooling\n");
+	    	out.write("min \\connections=5  #important for performances, internal pooling\n");
+	    	out.flush();
+	    } finally {
+	    	if(out!=null){
+	    		IOUtils.closeQuietly(out);
+	    	}
+	    }
+	    
+	    
+	    // now start the test
+		final AbstractGridFormat format = TestUtils.getFormat(timeElevURL);
 		assertNotNull(format);
-		ImageMosaicReader reader = getReader(timeElevURL, format);
-		assertNotNull(format);
+		ImageMosaicReader reader = TestUtils.getReader(timeElevURL, format);
+		assertNotNull(reader);
 		
 		final String[] metadataNames = reader.getMetadataNames();
 		assertNotNull(metadataNames);
@@ -287,16 +303,16 @@ public class ImageMosaicReaderTest extends Assert{
 		assertEquals("true", reader.getMetadataValue("HAS_TIME_DOMAIN"));
 		final String timeMetadata = reader.getMetadataValue("TIME_DOMAIN");
 		assertNotNull(timeMetadata);
-		assertEquals(16,timeMetadata.split(",").length);
+		assertEquals(2,timeMetadata.split(",").length);
 		assertEquals(timeMetadata.split(",")[0],reader.getMetadataValue("TIME_DOMAIN_MINIMUM"));
-		assertEquals(timeMetadata.split(",")[15],reader.getMetadataValue("TIME_DOMAIN_MAXIMUM"));
+		assertEquals(timeMetadata.split(",")[1],reader.getMetadataValue("TIME_DOMAIN_MAXIMUM"));
 		
 		assertEquals("true", reader.getMetadataValue("HAS_ELEVATION_DOMAIN"));
 		final String elevationMetadata = reader.getMetadataValue("ELEVATION_DOMAIN");
 		assertNotNull(elevationMetadata);
 		assertEquals(2,elevationMetadata.split(",").length);
-	        assertEquals(elevationMetadata.split(",")[0],reader.getMetadataValue("ELEVATION_DOMAIN_MINIMUM"));
-	        assertEquals(elevationMetadata.split(",")[1],reader.getMetadataValue("ELEVATION_DOMAIN_MAXIMUM"));
+	        assertEquals(Double.parseDouble(elevationMetadata.split(",")[0]),Double.parseDouble(reader.getMetadataValue("ELEVATION_DOMAIN_MINIMUM")),1E-6);
+	        assertEquals(Double.parseDouble(elevationMetadata.split(",")[1]),Double.parseDouble(reader.getMetadataValue("ELEVATION_DOMAIN_MAXIMUM")),1E-6);
 		
 		
 		// limit yourself to reading just a bit of it
@@ -315,26 +331,118 @@ public class ImageMosaicReaderTest extends Assert{
 		final List<Date> timeValues= new ArrayList<Date>();
 		final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss'Z'");
 		sdf.setTimeZone(TimeZone.getTimeZone("GMT+0"));
-		Date date = sdf.parse("2008-10-20T14:00:00.000Z");
+		Date date = sdf.parse("2008-10-31T00:00:00.000Z");
 		timeValues.add(date);
 		time.setValue(timeValues);
 		
 		final ParameterValue<double[]> bkg = ImageMosaicFormat.BACKGROUND_VALUES.createValue();
 		bkg.setValue(new double[]{-9999.0});
 		
+		
+		final ParameterValue<Boolean> direct= ImageMosaicFormat.USE_JAI_IMAGEREAD.createValue();
+		direct.setValue(false);
+		
 		final ParameterValue<List> elevation = ImageMosaicFormat.ELEVATION.createValue();
-		elevation.setValue(Arrays.asList(10.0));
+		elevation.setValue(Arrays.asList(100.0));
 	                
 		// Test the output coverage
-		checkCoverage(reader, new GeneralParameterValue[] {gg,time,bkg ,elevation}, "Time-Elevation Test");
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] {gg,time,bkg ,elevation ,direct}, "Time-Elevation Test");
 		
-		reader= getReader(timeElevURL, format);
+		reader= TestUtils.getReader(timeElevURL, format);
                 elevation.setValue(Arrays.asList(NumberRange.create(0.0,10.0)));
         
                 // Test the output coverage
-                checkCoverage(reader, new GeneralParameterValue[] { gg, time, bkg, elevation },
+                TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, time, bkg, elevation,direct },
                         "Time-Elevation Test");
+                
+         // clean up
+         if (!INTERACTIVE){        	
+         	FileUtils.deleteDirectory( TestData.file(this, "water temp3"));
+         }
 	}	
+
+	@Test
+//	@Ignore
+	public void timeElevation() throws IOException, ParseException, NoSuchAuthorityCodeException, FactoryException {
+    	final File workDir=new File(TestData.file(this, "."),"watertemp2");
+    	if(!workDir.mkdir()){
+    	    FileUtils.deleteDirectory(workDir);
+    	    assertTrue("Unable to create workdir:"+workDir,workDir.mkdir());
+    	}
+    	FileUtils.copyFile(TestData.file(this, "watertemp.zip"), new File(workDir,"watertemp.zip"));
+    	TestData.unzipFile(this, "watertemp2/watertemp.zip");
+    	
+	    final URL timeElevURL = TestData.url(this, "watertemp2");
+	    
+		final AbstractGridFormat format = TestUtils.getFormat(timeElevURL);
+		assertNotNull(format);
+		ImageMosaicReader reader = TestUtils.getReader(timeElevURL, format);
+		assertNotNull(format);
+		
+		final String[] metadataNames = reader.getMetadataNames();
+		assertNotNull(metadataNames);
+		assertEquals(metadataNames.length,10);
+		
+		assertEquals("true", reader.getMetadataValue("HAS_TIME_DOMAIN"));
+		final String timeMetadata = reader.getMetadataValue("TIME_DOMAIN");
+		assertNotNull(timeMetadata);
+		assertEquals(2,timeMetadata.split(",").length);
+		assertEquals(timeMetadata.split(",")[0],reader.getMetadataValue("TIME_DOMAIN_MINIMUM"));
+		assertEquals(timeMetadata.split(",")[1],reader.getMetadataValue("TIME_DOMAIN_MAXIMUM"));
+		
+		assertEquals("true", reader.getMetadataValue("HAS_ELEVATION_DOMAIN"));
+		final String elevationMetadata = reader.getMetadataValue("ELEVATION_DOMAIN");
+		assertNotNull(elevationMetadata);
+		assertEquals(2,elevationMetadata.split(",").length);
+	        assertEquals(elevationMetadata.split(",")[0],reader.getMetadataValue("ELEVATION_DOMAIN_MINIMUM"));
+	        assertEquals(elevationMetadata.split(",")[1],reader.getMetadataValue("ELEVATION_DOMAIN_MAXIMUM"));
+
+		
+		// limit yourself to reading just a bit of it
+		final ParameterValue<GridGeometry2D> gg =  AbstractGridFormat.READ_GRIDGEOMETRY2D.createValue();
+		final GeneralEnvelope envelope = reader.getOriginalEnvelope();
+		final Dimension dim= new Dimension();
+		dim.setSize(reader.getOriginalGridRange().getSpan(0)/2.0, reader.getOriginalGridRange().getSpan(1)/2.0);
+		final Rectangle rasterArea=(( GridEnvelope2D)reader.getOriginalGridRange());
+		rasterArea.setSize(dim);
+		final GridEnvelope2D range= new GridEnvelope2D(rasterArea);
+		gg.setValue(new GridGeometry2D(range,envelope));
+		
+		
+		// use imageio with defined tiles
+		final ParameterValue<List> time = ImageMosaicFormat.TIME.createValue();
+		final List<Date> timeValues= new ArrayList<Date>();
+		final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss'Z'");
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT+0"));
+		Date date = sdf.parse("2008-11-01T00:00:00.000Z");
+		timeValues.add(date);
+		time.setValue(timeValues);
+		
+		final ParameterValue<Boolean> direct= ImageMosaicFormat.USE_JAI_IMAGEREAD.createValue();
+		direct.setValue(false);
+		
+		final ParameterValue<double[]> bkg = ImageMosaicFormat.BACKGROUND_VALUES.createValue();
+		bkg.setValue(new double[]{-9999.0});
+		
+		final ParameterValue<List> elevation = ImageMosaicFormat.ELEVATION.createValue();
+		elevation.setValue(Arrays.asList(0.0));
+	                
+		// Test the output coverage
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] {gg,time,bkg ,elevation,direct}, "Time-Elevation Test");
+		
+		
+		reader= TestUtils.getReader(timeElevURL, format);
+                elevation.setValue(Arrays.asList(NumberRange.create(0.0,10.0)));
+        
+                // Test the output coverage
+                TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, time, bkg, elevation,direct },"Time-Elevation Test");
+                
+                // clean up
+                if (!INTERACTIVE){
+                 	FileUtils.deleteDirectory( TestData.file(this, "watertemp2"));
+                 }
+	}	
+
 	
 	/**
          * 
@@ -346,14 +454,37 @@ public class ImageMosaicReaderTest extends Assert{
          * @throws NoSuchAuthorityCodeException
          */
         @Test
-        public void timeIntegerElevation() throws IOException, ParseException, NoSuchAuthorityCodeException, FactoryException {
+//        @Ignore
+        public void timeDoubleElevation() throws IOException, ParseException, NoSuchAuthorityCodeException, FactoryException {
                 // Check we can have an integer elevation too 
-                TestData.unzipFile(this, "watertemp.zip");
-                final URL timeElevURL = TestData.url(this, "watertemp");
-                System.setProperty("org.geotools.shapefile.datetime", "true");
-                final AbstractGridFormat format = getFormat(timeElevURL);
+        	final File workDir=new File(TestData.file(this, "."),"watertemp1");
+                if(!workDir.mkdir()){
+                    FileUtils.deleteDirectory(workDir);
+                    assertTrue("Unable to create workdir:"+workDir,workDir.mkdir());
+                }
+        	FileUtils.copyFile(TestData.file(this, "watertemp.zip"), new File(workDir,"watertemp.zip"));
+        		
+                TestData.unzipFile(this, "watertemp1/watertemp.zip");
+                final URL timeElevURL = TestData.url(this, "watertemp1");
+        	    //place H2 file in the dir
+        	    FileWriter out=null;
+        	    try{
+        	    	out = new FileWriter(new File(TestData.file(this, "."),"/watertemp1/indexer.properties"));
+        	    	out.write("TimeAttribute=ingestion\n");
+        	    	out.write("ElevationAttribute=elevation\n");
+        	    	out.write("Schema=*the_geom:Polygon,location:String,ingestion:java.util.Date,elevation:Double\n");
+        	    	out.write("PropertyCollectors=TimestampFileNameExtractorSPI[timeregex](ingestion),DoubleFileNameExtractorSPI[elevationregex](elevation)\n");
+        	    	out.flush();
+        	    } finally {
+        	    	if(out!=null){
+        	    		IOUtils.closeQuietly(out);
+        	    	}
+        	    }
+        	    
+        	    
+                final AbstractGridFormat format = TestUtils.getFormat(timeElevURL);
                 assertNotNull(format);
-                ImageMosaicReader reader = getReader(timeElevURL, format);
+                ImageMosaicReader reader = TestUtils.getReader(timeElevURL, format);
                 assertNotNull(format);
                 
                 final String[] metadataNames = reader.getMetadataNames();
@@ -371,15 +502,23 @@ public class ImageMosaicReaderTest extends Assert{
                 final String elevationMetadata = reader.getMetadataValue("ELEVATION_DOMAIN");
                 assertNotNull(elevationMetadata);
                 assertEquals(2,elevationMetadata.split(",").length);
-                assertEquals("0",reader.getMetadataValue("ELEVATION_DOMAIN_MINIMUM"));
-                assertEquals("100",reader.getMetadataValue("ELEVATION_DOMAIN_MAXIMUM"));
+                assertEquals("0.0",reader.getMetadataValue("ELEVATION_DOMAIN_MINIMUM"));
+                assertEquals("100.0",reader.getMetadataValue("ELEVATION_DOMAIN_MAXIMUM"));
+                
+                
+                
+                // clean up
+                reader.dispose();
+                if (!INTERACTIVE){
+                 	FileUtils.deleteDirectory( TestData.file(this, "watertemp1"));
+                }
         }
 	
 	@Test
-//        @Ignore	
+//    @Ignore	
 	public void imposedBBox() throws IOException, NoSuchAuthorityCodeException, FactoryException {
-		final AbstractGridFormat format = getFormat(imposedEnvelopeURL);
-		final ImageMosaicReader reader = getReader(imposedEnvelopeURL, format);
+		final AbstractGridFormat format = TestUtils.getFormat(imposedEnvelopeURL);
+		final ImageMosaicReader reader = TestUtils.getReader(imposedEnvelopeURL, format);
 	
 		
 		//check envelope
@@ -406,7 +545,7 @@ public class ImageMosaicReaderTest extends Assert{
 		
 		
 		// Test the output coverage
-		checkCoverage(reader, new GeneralParameterValue[] {gg,useJai }, "Imposed BBox");
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] {gg,useJai }, "Imposed BBox");
 	}	
 	
 	/**
@@ -419,19 +558,20 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws ParseException 
 	 */
 	@Test
-//        @Ignore	
+//	@Ignore
 	public void time() throws IOException, NoSuchAuthorityCodeException, FactoryException, ParseException {
-	        System.setProperty("org.geotools.shapefile.datetime", "true");
-		final AbstractGridFormat format = getFormat(timeURL);
-		ImageMosaicReader reader = getReader(timeURL, format);
-		
+	       
+		final AbstractGridFormat format = TestUtils.getFormat(timeURL);
+		ImageMosaicReader reader = TestUtils.getReader(timeURL, format);
+	    
 		final String[] metadataNames = reader.getMetadataNames();
 		assertNotNull(metadataNames);
 		assertEquals(metadataNames.length,10);
-		assertEquals("2004-01-01T00:00:00.000Z,2004-02-01T00:00:00.000Z,2004-03-01T00:00:00.000Z,2004-04-01T00:00:00.000Z,2004-05-01T00:00:00.000Z,2004-06-01T00:00:00.000Z,2004-07-01T00:00:00.000Z", reader.getMetadataValue(metadataNames[0]));
 		assertEquals("true", reader.getMetadataValue("HAS_TIME_DOMAIN"));
-		assertEquals("2004-01-01T00:00:00.000Z", reader.getMetadataValue("TIME_DOMAIN_MINIMUM"));
-		assertEquals("2004-07-01T00:00:00.000Z", reader.getMetadataValue("TIME_DOMAIN_MAXIMUM"));
+		assertEquals("2004-02-01T00:00:00.000Z", reader.getMetadataValue("TIME_DOMAIN_MINIMUM"));
+		assertEquals("2004-05-01T00:00:00.000Z", reader.getMetadataValue("TIME_DOMAIN_MAXIMUM"));
+		assertEquals("2004-02-01T00:00:00.000Z,2004-03-01T00:00:00.000Z,2004-04-01T00:00:00.000Z,2004-05-01T00:00:00.000Z", reader.getMetadataValue(metadataNames[0]));		
+
 		// limit yourself to reading just a bit of it
 		final ParameterValue<GridGeometry2D> gg =  AbstractGridFormat.READ_GRIDGEOMETRY2D.createValue();
 		final GeneralEnvelope envelope = reader.getOriginalEnvelope();
@@ -445,42 +585,42 @@ public class ImageMosaicReaderTest extends Assert{
 		// use imageio with defined tiles
 		final ParameterValue<Boolean> useJai = AbstractGridFormat.USE_JAI_IMAGEREAD.createValue();
 		useJai.setValue(false);
-		final ParameterValue<String> tileSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue();
-		tileSize.setValue("128,128");
 		
 		// specify time
 		final ParameterValue<List> time = ImageMosaicFormat.TIME.createValue();
 		
 		final SimpleDateFormat formatD = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		formatD.setTimeZone(TimeZone.getTimeZone("GMT"));
-		final Date timeD=formatD.parse("2004-01-01T00:00:00.000Z");
+		final Date timeD=formatD.parse("2004-02-01T00:00:00.000Z");
 		time.setValue(new ArrayList(){{add(timeD);}});
 		
 		// Test the output coverage
-		checkCoverage(reader, new GeneralParameterValue[] {gg,useJai ,tileSize,time}, "time test");
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] {gg,useJai ,time}, "time test");
 		
 		// specify time range
 		// Test the output coverage
-		reader = getReader(timeURL, format);
+		reader = TestUtils.getReader(timeURL, format);
                 time.setValue(
                         new ArrayList(){{
-                            add(new DateRange(formatD.parse("2004-01-01T00:00:00.000Z"), formatD.parse("2004-02-01T00:00:00.000Z")));
+                            add(new DateRange(formatD.parse("2004-02-01T00:00:00.000Z"), formatD.parse("2004-03-01T00:00:00.000Z")));
                             }}
                 );		
-                checkCoverage(reader, new GeneralParameterValue[] {gg,useJai ,tileSize,time}, "time test");
+                TestUtils.checkCoverage(reader, new GeneralParameterValue[] {gg,useJai ,time}, "time test");
 		
 	}	
 	
     /**
-     * + * Simple test method accessing time and 2 custom dimensions for the sample
-     * dataset. + * + * @throws IOException + * @throws FactoryException + * @throws
-     * NoSuchAuthorityCodeException + * @throws ParseException +
+     * Simple test method accessing time and 2 custom dimensions for the sample
+     * dataset
+     * @throws IOException
+     * @throws FactoryException 
+     * @throws NoSuchAuthorityCodeException 
+     * @throws ParseException +
      */
     @Test
     // @Ignore
     @SuppressWarnings("rawtypes")
-    public void timeAdditionalDim() throws IOException,
-            NoSuchAuthorityCodeException, FactoryException, ParseException {
+    public void timeAdditionalDim() throws Exception {
     
         final AbstractGridFormat format = TestUtils
                 .getFormat(timeAdditionalDomainsURL);
@@ -491,19 +631,15 @@ public class ImageMosaicReaderTest extends Assert{
         assertNotNull(metadataNames);
         assertEquals(metadataNames.length, 14);
         assertEquals("true", reader.getMetadataValue("HAS_DATE_DOMAIN"));
-        assertEquals("20081031T0000000,20081101T0000000",
-                reader.getMetadataValue("DATE_DOMAIN"));
-        assertEquals("true", reader.getMetadataValue("HAS_WAVELENGTH_DOMAIN"));
+        assertEquals("20081031T0000000,20081101T0000000",reader.getMetadataValue("DATE_DOMAIN"));
+        assertEquals("true", reader.getMetadataValue("HAS_DEPTH_DOMAIN"));
         assertEquals("false", reader.getMetadataValue("HAS_ELEVATION_DOMAIN"));
-        assertEquals("020,100", reader.getMetadataValue("WAVELENGTH_DOMAIN"));
+        assertEquals("false", reader.getMetadataValue("HAS_XX_DOMAIN"));
+        assertEquals("20,100", reader.getMetadataValue("DEPTH_DOMAIN"));
     
         // use imageio with defined tiles
-        final ParameterValue<Boolean> useJai = AbstractGridFormat.USE_JAI_IMAGEREAD
-                .createValue();
+        final ParameterValue<Boolean> useJai = AbstractGridFormat.USE_JAI_IMAGEREAD .createValue();
         useJai.setValue(false);
-        final ParameterValue<String> tileSize = AbstractGridFormat.SUGGESTED_TILE_SIZE
-                .createValue();
-        tileSize.setValue("128,128");
     
         // specify time
         final ParameterValue<List> time = ImageMosaicFormat.TIME.createValue();
@@ -520,30 +656,32 @@ public class ImageMosaicReaderTest extends Assert{
         // specify additional Dimensions
         Set<ParameterDescriptor<List>> params = reader.getDynamicParameters();
         ParameterValue<List<String>> dateValue = null;
-        ParameterValue<List<String>> waveLengthValue = null;
+        ParameterValue<List<String>> depthValue = null;
         final String selectedWaveLength = "020";
         final String selectedDate = "20081031T0000000";
         for (ParameterDescriptor param : params) {
-            if (param.getName().getCode().equalsIgnoreCase("date")) {
+            if (param.getName().getCode().equalsIgnoreCase("DATE")) {
                 dateValue = param.createValue();
                 dateValue.setValue(new ArrayList<String>() {
                     {
                         add(selectedDate);
                     }
                 });
-            } else if (param.getName().getCode().equalsIgnoreCase("wavelength")) {
-                waveLengthValue = param.createValue();
-                waveLengthValue.setValue(new ArrayList<String>() {
+            } else if (param.getName().getCode().equalsIgnoreCase("DEPTH")) {
+                depthValue = param.createValue();
+                depthValue.setValue(new ArrayList<String>() {
                     {
                         add(selectedWaveLength);
                     }
                 });
             }
         }
+        assertNotNull(depthValue);
+        assertNotNull(dateValue);
+        
         // Test the output coverage
-        GeneralParameterValue[] values = new GeneralParameterValue[] { useJai,
-                tileSize, time, dateValue, waveLengthValue };
-        final GridCoverage2D coverage = TestUtils.getCoverage(reader, values);
+        GeneralParameterValue[] values = new GeneralParameterValue[] { useJai, time, dateValue, depthValue };
+        final GridCoverage2D coverage = TestUtils.getCoverage(reader, values, true);
         final String fileSource = (String) coverage
                 .getProperty(AbstractGridCoverage2DReader.FILE_SOURCE_PROPERTY);
     
@@ -553,7 +691,77 @@ public class ImageMosaicReaderTest extends Assert{
                 + selectedDate + "_12");
         TestUtils.testCoverage(reader, values, "domain test", coverage, null);
     }
-	
+
+    /**
+     * Simple test method accessing time and 2 custom dimensions for the sample
+     * dataset
+     * @throws IOException
+     * @throws FactoryException 
+     * @throws NoSuchAuthorityCodeException 
+     * @throws ParseException +
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    public void multipleDimensionsStacked() throws Exception {
+    
+        final AbstractGridFormat format = TestUtils.getFormat(timeAdditionalDomainsURL);
+        ImageMosaicReader reader = TestUtils.getReader(timeAdditionalDomainsURL,format);
+    
+        final String[] metadataNames = reader.getMetadataNames();
+        assertNotNull(metadataNames);
+        assertEquals(metadataNames.length, 14);
+        assertEquals("true", reader.getMetadataValue("HAS_DATE_DOMAIN"));
+        assertEquals("20081031T0000000,20081101T0000000",reader.getMetadataValue("DATE_DOMAIN"));
+        assertEquals("true", reader.getMetadataValue("HAS_DEPTH_DOMAIN"));
+        assertEquals("false", reader.getMetadataValue("HAS_ELEVATION_DOMAIN"));
+        assertEquals("20,100", reader.getMetadataValue("DEPTH_DOMAIN"));
+    
+        // use imageio with defined tiles
+        final ParameterValue<Boolean> useJai = AbstractGridFormat.USE_JAI_IMAGEREAD.createValue();
+        useJai.setValue(false);
+        final ParameterValue<String> tileSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue();
+        tileSize.setValue("128,128");
+    
+        // specify time
+        final ParameterValue<List> time = ImageMosaicFormat.TIME.createValue();
+        final SimpleDateFormat formatD = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        formatD.setTimeZone(TimeZone.getTimeZone("GMT"));
+        final Date timeD = formatD.parse("2008-10-31T00:00:00.000Z");
+        time.setValue(new ArrayList() {
+            {
+                add(timeD);
+            }
+        });
+    
+        // specify additional Dimensions
+        Set<ParameterDescriptor<List>> params = reader.getDynamicParameters();
+        ParameterValue<List<String>> dateValue = null;
+        final String selectedDate = "20081031T0000000";
+        for (ParameterDescriptor param : params) {
+            if (param.getName().getCode().equalsIgnoreCase("DATE")) {
+                dateValue = param.createValue();
+                dateValue.setValue(new ArrayList<String>() {
+                    {
+                        add(selectedDate);
+                    }
+                });
+            } 
+        }
+        
+        // Stacked bands
+        final ParameterValue<String> paramStacked = ImageMosaicFormat.MERGE_BEHAVIOR.createValue();
+        paramStacked.setValue(MergeBehavior.STACK.toString());
+        
+        // Test the output coverage
+        GeneralParameterValue[] values = new GeneralParameterValue[] { useJai,tileSize, time, dateValue,paramStacked };
+        final GridCoverage2D coverage = TestUtils.getCoverage(reader, values, false);
+        assertNotNull(coverage);
+        
+        // inspect reanderedImage
+        final RenderedImage image= coverage.getRenderedImage();
+        assertEquals("wrong number of bands detected",2,image.getSampleModel().getNumBands());
+    }
+
     /**
      * Tests the {@link ImageMosaicReader} with support for different
      * resolutions/different number of overviews.
@@ -568,11 +776,12 @@ public class ImageMosaicReaderTest extends Assert{
      * @throws FactoryException
      */
     @Test
+//    @Ignore
     public void testHeterogeneousGranules() throws IOException,
             MismatchedDimensionException, FactoryException {
 
-        final AbstractGridFormat format = getFormat(heterogeneousGranulesURL);
-        ImageMosaicReader reader = getReader(heterogeneousGranulesURL, format);
+        final AbstractGridFormat format = TestUtils.getFormat(heterogeneousGranulesURL);
+        ImageMosaicReader reader = TestUtils.getReader(heterogeneousGranulesURL, format);
 
         final ParameterValue<GridGeometry2D> gg = AbstractGridFormat.READ_GRIDGEOMETRY2D.createValue();
         final GeneralEnvelope envelope = reader.getOriginalEnvelope();
@@ -591,25 +800,25 @@ public class ImageMosaicReaderTest extends Assert{
 
         LOGGER.info("\nTesting with OverviewPolicy = QUALITY");
         op.setValue(OverviewPolicy.QUALITY);
-        checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
+        TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
                 "heterogeneous granules test: OverviewPolicy=QUALITY", rasterArea);
 
         LOGGER.info("\nTesting with OverviewPolicy = SPEED");
-        reader = getReader(heterogeneousGranulesURL, format);
+        reader = TestUtils.getReader(heterogeneousGranulesURL, format);
         op.setValue(OverviewPolicy.SPEED);
-        checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
+        TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
                 "heterogeneous granules test: OverviewPolicy=SPEED", rasterArea);
 
         LOGGER.info("\nTesting with OverviewPolicy = NEAREST");
-        reader = getReader(heterogeneousGranulesURL, format);
+        reader = TestUtils.getReader(heterogeneousGranulesURL, format);
         op.setValue(OverviewPolicy.NEAREST);
-        checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
+        TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
                 "heterogeneous granules test: OverviewPolicy=NEAREST", rasterArea);
 
         LOGGER.info("\nTesting with OverviewPolicy = IGNORE");
-        reader = getReader(heterogeneousGranulesURL, format);
+        reader = TestUtils.getReader(heterogeneousGranulesURL, format);
         op.setValue(OverviewPolicy.IGNORE);
-        checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
+        TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, useJai, op },
                 "heterogeneous granules test: OverviewPolicy=IGNORE", rasterArea);
 
     }
@@ -623,28 +832,22 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws FactoryException 
 	 */
 	@Test
-//        @Ignore	
+//  @Ignore	
 	public void defaultParameterValue() throws IOException,	
 			MismatchedDimensionException, FactoryException {
 
-		final String baseTestName="testDefaultParameterValue-";
+		final String baseTestName="testDefaultParameterValue";
 		imageMosaicSimpleParamsTest(rgbURL, null, null,baseTestName+rgbURL.getFile(), false);
 		imageMosaicSimpleParamsTest(rgbAURL, null,  null,baseTestName+rgbAURL.getFile(), false);
 		imageMosaicSimpleParamsTest(overviewURL, null,null,baseTestName+overviewURL.getFile(), false);
 		imageMosaicSimpleParamsTest(indexURL, null, null,baseTestName+indexURL.getFile(), false);
 		imageMosaicSimpleParamsTest(grayURL, null, null,baseTestName+grayURL.getFile(), false);
-		imageMosaicSimpleParamsTest(indexAlphaURL, null, null,baseTestName+indexAlphaURL.getFile(), false);
-//
-//		// And again with URL that points into a JAR
-//		imageMosaicSimpleParamsTest(rgbJarURL, null, null,baseTestName+rgbJarURL.getFile(), false);
-//		imageMosaicSimpleParamsTest(indexJarURL, null, null,baseTestName+indexJarURL.getFile(), false);
-//		imageMosaicSimpleParamsTest(grayJarURL, null, null,baseTestName+grayJarURL.getFile(), false);
-//		imageMosaicSimpleParamsTest(indexAlphaJarURL, null, null,baseTestName+indexAlphaJarURL.getFile(), false);
+		imageMosaicSimpleParamsTest(indexAlphaURL, null, null,baseTestName+indexAlphaURL.getFile(), false);		
 	}
 	
 	
 	@Test
-//        @Ignore	
+//    @Ignore	
 	public void errors() throws NoSuchAuthorityCodeException, FactoryException {
 		final Hints hints= new Hints(Hints.DEFAULT_COORDINATE_REFERENCE_SYSTEM, CRS.decode("EPSG:4326", true));
 		
@@ -744,8 +947,8 @@ public class ImageMosaicReaderTest extends Assert{
 
 		// Get the resources as needed.
 		Assert.assertNotNull(testURL);
-		final AbstractGridFormat format = getFormat(testURL);
-		final ImageMosaicReader reader = getReader(testURL, format);
+		final AbstractGridFormat format = TestUtils.getFormat(testURL);
+		final ImageMosaicReader reader = TestUtils.getReader(testURL, format);
 
 		// limit yourself to reading just a bit of it
 		final ParameterValue<Color> inTransp =  AbstractGridFormat.INPUT_TRANSPARENT_COLOR.createValue();
@@ -756,147 +959,7 @@ public class ImageMosaicReaderTest extends Assert{
 		blendPV.setValue(blend);
 
 		// Test the output coverage
-		checkCoverage(reader, new GeneralParameterValue[] { inTransp, blendPV, outTransp }, title);
-	}
-
-	/**
-	 * Tests the creation of a {@link GridCoverage2D} using the provided
-	 * {@link ImageMosaicReader} as well as the provided {@link ParameterValue}.
-	 * 
-	 * @param reader
-	 *            to use for creating a {@link GridCoverage2D}.
-	 * @param value
-	 *            that control the actions to take for creating a
-	 *            {@link GridCoverage2D}.
-	 * @param title
-	 *            to print out as the head of the frame in case we visualize it.
-	 * @return 
-	 * @throws IOException
-	 */
-	private void checkCoverage(final ImageMosaicReader reader,
-                GeneralParameterValue[] values, String title) throws IOException {
-	    checkCoverage(reader, values, title, null);
-	}
-	
-	private void checkCoverage(final ImageMosaicReader reader,
-			GeneralParameterValue[] values, String title, Rectangle rect) throws IOException {
-		// Test the coverage
-		final GridCoverage2D coverage = getCoverage(reader, values);
-		testCoverage(reader, values, title, coverage, rect);
-	}
-
-	
-	@SuppressWarnings("unchecked")
-	private void testCoverage(final ImageMosaicReader reader,
-			GeneralParameterValue[] values, String title,
-			final GridCoverage2D coverage, final Rectangle rect) {
-	    final RenderedImage image = coverage.getRenderedImage(); 
-		if (interactive)
-			show(image, title);
-		else
-			PlanarImage.wrapRenderedImage(image).getTiles();
-		
-		if(values!=null)	
-			for(GeneralParameterValue pv:values){
-				if(pv.getDescriptor().getName().equals(AbstractGridFormat.READ_GRIDGEOMETRY2D.getName())){
-					
-					Parameter<GridGeometry2D> param= (Parameter<GridGeometry2D>) pv;
-					// check envelope if it has been requested
-					assertTrue(CRS.equalsIgnoreMetadata(
-							param.getValue().getEnvelope().getCoordinateReferenceSystem(), 
-							coverage.getCoordinateReferenceSystem()));
-					
-//					// I check the envelope for this equality so that I can take into account CRS that differs only in metadata
-//					// but that essentially are the same thing
-//					assertTrue(
-//							
-//							XRectangle2D.equalsEpsilon(
-//									((GeneralEnvelope)coverage.getEnvelope()).toRectangle2D(), 
-//									((GeneralEnvelope)param.getValue().getEnvelope()).toRectangle2D()
-//							)
-//					);
-	
-				}
-			}
-		if (rect != null){
-		    assertEquals(image.getWidth(), rect.width); 
-		    assertEquals(image.getHeight(), rect.height);
-		}
-		
-		if (!interactive){
-			// dispose stuff
-			coverage.dispose(true);
-			reader.dispose();
-		}
-	}
-
-	private GridCoverage2D getCoverage(final ImageMosaicReader reader,
-			GeneralParameterValue[] values) throws IOException {
-		final GridCoverage2D coverage = (GridCoverage2D) reader.read(values);
-		Assert.assertNotNull(coverage);
-		return coverage;
-	}
-
-	/**
-	 * Shows the provided {@link RenderedImage} ina {@link JFrame} using the
-	 * provided <code>title</code> as the frame's title.
-	 * 
-	 * @param image
-	 *            to show.
-	 * @param title
-	 *            to use.
-	 */
-	static void show(RenderedImage image, String title) {
-	    ImageIOUtilities.visualize(image,title);
-
-	}
-
-	/**
-	 * returns an {@link AbstractGridCoverage2DReader} for the provided
-	 * {@link URL} and for the providede {@link AbstractGridFormat}.
-	 * 
-	 * @param testURL
-	 *            points to a valid object to create an
-	 *            {@link AbstractGridCoverage2DReader} for.
-	 * @param format
-	 *            to use for instantiating such a reader.
-	 * @return a suitable {@link ImageMosaicReader}.
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 */
-	private ImageMosaicReader getReader(URL testURL,
-			final AbstractGridFormat format) throws NoSuchAuthorityCodeException, FactoryException {
-
-		final Hints hints= new Hints(Hints.DEFAULT_COORDINATE_REFERENCE_SYSTEM, CRS.decode("EPSG:4326", true));
-		return getReader(testURL, format, hints);
-
-	}
-
-	private ImageMosaicReader getReader(URL testURL,
-			final AbstractGridFormat format, Hints hints) {
-//		Get a reader
-		final ImageMosaicReader reader = (ImageMosaicReader) format.getReader(testURL, hints);
-		Assert.assertNotNull(reader);
-		return reader;
-	}
-
-	/**
-	 * Tries to get an {@link AbstractGridFormat} for the provided URL.
-	 * 
-	 * @param testURL
-	 *            points to a shapefile that is the index of a certain mosaic.
-	 * @return a suitable {@link AbstractGridFormat}.
-	 * @throws FactoryException 
-	 * @throws NoSuchAuthorityCodeException 
-	 */
-	private AbstractGridFormat getFormat(URL testURL) throws NoSuchAuthorityCodeException, FactoryException {
-
-		final Hints hints= new Hints(Hints.DEFAULT_COORDINATE_REFERENCE_SYSTEM, CRS.decode("EPSG:4326", true));
-		// Get format
-		final AbstractGridFormat format = (AbstractGridFormat) GridFormatFinder.findFormat(testURL,hints);
-		Assert.assertNotNull(format);
-		Assert.assertFalse("UknownFormat", format instanceof UnknownFormat);
-		return format;
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] { inTransp, blendPV, outTransp }, title);
 	}
 
 	/**
@@ -915,8 +978,8 @@ public class ImageMosaicReaderTest extends Assert{
 
 		// Get the resources as needed.
 		Assert.assertNotNull(testURL);
-		final AbstractGridFormat format = getFormat(testURL);
-		final ImageMosaicReader reader = getReader(testURL, format);
+		final AbstractGridFormat format = TestUtils.getFormat(testURL);
+		final ImageMosaicReader reader = TestUtils.getReader(testURL, format);
 
 
 		// crop
@@ -936,14 +999,15 @@ public class ImageMosaicReaderTest extends Assert{
 
 
 		// test the coverage
-		checkCoverage(reader, new GeneralParameterValue[] { gg, outTransp },title);
+		TestUtils.checkCoverage(reader, new GeneralParameterValue[] { gg, outTransp },title);
 
 	}
 	
     @Test
+//    @Ignore
     public void testRequestInHole() throws Exception {
-        final AbstractGridFormat format = getFormat(rgbAURL);
-        final ImageMosaicReader reader = getReader(rgbAURL, format);
+        final AbstractGridFormat format = TestUtils.getFormat(rgbAURL);
+        final ImageMosaicReader reader = TestUtils.getReader(rgbAURL, format);
 
         assertNotNull(reader);
 
@@ -961,7 +1025,6 @@ public class ImageMosaicReaderTest extends Assert{
         GridCoverage2D coverage = reader.read(new GeneralParameterValue[] {ggp, bgp});
         assertNotNull(coverage);
         assertTrue(coverage.getEnvelope2D().intersects((Rectangle2D) env));
-        assertTrue(coverage.getEnvelope2D().intersects(env.getBounds2D()));
         
         // and that the color is the expected one given the background values provided
         RenderedImage ri = coverage.getRenderedImage();
@@ -975,9 +1038,10 @@ public class ImageMosaicReaderTest extends Assert{
     }
     
     @Test
+//    @Ignore
     public void testRequestInOut() throws Exception {
-        final AbstractGridFormat format = getFormat(rgbAURL);
-        final ImageMosaicReader reader = getReader(rgbAURL, format);
+        final AbstractGridFormat format = TestUtils.getFormat(rgbAURL);
+        final ImageMosaicReader reader = TestUtils.getReader(rgbAURL, format);
 
         assertNotNull(reader);
 
@@ -995,16 +1059,15 @@ public class ImageMosaicReaderTest extends Assert{
         // read and check we actually got a coverage in the requested area
         GridCoverage2D coverage = reader.read(new GeneralParameterValue[] {ggp, bgp});
         assertNotNull(coverage);
-//        System.out.println(coverage.getEnvelope2D());
-//        System.out.println(env);
+        System.out.println(coverage.getEnvelope2D());
+        System.out.println(env);
         assertTrue(coverage.getEnvelope2D().contains((Rectangle2D) env));
-        assertTrue(coverage.getEnvelope2D().contains(env.getBounds2D()));
         
         // and that the color is the expected one given the background values provided
         RenderedImage ri = coverage.getRenderedImage();
         // ImageIO.write(ri, "PNG", new File("/tmp/mix.png"));
-//        System.out.println(ri.getNumXTiles());
-//        System.out.println(ri.getNumYTiles());
+        System.out.println(ri.getNumXTiles());
+        System.out.println(ri.getNumYTiles());
         int[] pixel = new int[4];
         Raster tile = ri.getTile(ri.getMinTileX() + ri.getNumXTiles()  - 1, 
                 ri.getMinTileY() + ri.getNumYTiles() - 1);
@@ -1021,6 +1084,17 @@ public class ImageMosaicReaderTest extends Assert{
 	public static void main(String[] args) {
 		TestRunner.run(ImageMosaicReaderTest.suite());
 
+	}
+	
+	@BeforeClass
+	public static void init(){
+		
+		//make sure CRS ordering is correct
+		System.setProperty("org.geotools.referencing.forceXY", "true");
+	    System.setProperty("user.timezone", "GMT");
+		System.setProperty("org.geotools.shapefile.datetime", "true");
+
+		INTERACTIVE = TestData.isInteractiveTest();
 	}
 
 	@Before
@@ -1047,9 +1121,6 @@ public class ImageMosaicReaderTest extends Assert{
 		
 		imposedEnvelopeURL=TestData.url(this,"env");
 	
-		
-		interactive = TestData.isInteractiveTest();
-
 	}
 
 	/**
@@ -1059,13 +1130,13 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws IOException
 	 */
 	private void cleanUp() throws FileNotFoundException, IOException {
-			if(interactive)
+			if(INTERACTIVE)
 				return;
 			File dir=TestData.file(this, "overview/");
 			File[] files = dir.listFiles(
 					(FilenameFilter)FileFilterUtils.notFileFilter(
-							FileFilterUtils.orFileFilter(
-									FileFilterUtils.orFileFilter(
+							FileFilterUtils.or(
+									FileFilterUtils.or(
 											FileFilterUtils.suffixFileFilter("tif"),
 											FileFilterUtils.suffixFileFilter("aux")
 									),
@@ -1079,7 +1150,7 @@ public class ImageMosaicReaderTest extends Assert{
 			
 			dir=TestData.file(this, "rgba/");
 			files = dir.listFiles((FilenameFilter)FileFilterUtils.notFileFilter(
-					FileFilterUtils.orFileFilter(
+					FileFilterUtils.or(
 							FileFilterUtils.notFileFilter(FileFilterUtils.suffixFileFilter("png")),
 							FileFilterUtils.notFileFilter(FileFilterUtils.suffixFileFilter("wld"))
 					)));
@@ -1091,6 +1162,166 @@ public class ImageMosaicReaderTest extends Assert{
 	@After
 	public void tearDown() throws FileNotFoundException, IOException{
 		cleanUp();
+
+	}
+	
+	/**
+     * Simple test method accessing time and 2 custom dimensions for the sample
+     * dataset
+     * @throws IOException
+     * @throws FactoryException 
+     * @throws NoSuchAuthorityCodeException 
+     * @throws ParseException +
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    public void timeAdditionalDimNoResultsDueToWrongDim() throws IOException,
+            NoSuchAuthorityCodeException, FactoryException, ParseException {
+    
+        final AbstractGridFormat format = TestUtils
+                .getFormat(timeAdditionalDomainsURL);
+        ImageMosaicReader reader = TestUtils.getReader(timeAdditionalDomainsURL,
+                format);
+    
+        final String[] metadataNames = reader.getMetadataNames();
+        assertNotNull(metadataNames);
+        assertEquals(metadataNames.length, 14);
+        assertEquals("true", reader.getMetadataValue("HAS_DATE_DOMAIN"));
+        assertEquals("20081031T0000000,20081101T0000000",
+                reader.getMetadataValue("DATE_DOMAIN"));
+        assertEquals("true", reader.getMetadataValue("HAS_DEPTH_DOMAIN"));
+        assertEquals("false", reader.getMetadataValue("HAS_ELEVATION_DOMAIN"));
+        assertEquals("20,100", reader.getMetadataValue("DEPTH_DOMAIN"));
+    
+        // use imageio with defined tiles
+        final ParameterValue<Boolean> useJai = AbstractGridFormat.USE_JAI_IMAGEREAD
+                .createValue();
+        useJai.setValue(false);
+    
+        // specify time
+        final ParameterValue<List> time = ImageMosaicFormat.TIME.createValue();
+        final SimpleDateFormat formatD = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        formatD.setTimeZone(TimeZone.getTimeZone("GMT"));
+        final Date timeD = formatD.parse("2008-10-31T00:00:00.000Z");
+        time.setValue(new ArrayList() {
+            {
+                add(timeD);
+            }
+        });
+    
+        // specify additional Dimensions
+        Set<ParameterDescriptor<List>> params = reader.getDynamicParameters();
+        ParameterValue<List<String>> dateValue = null;
+        ParameterValue<List<String>> depthValue = null;
+        final String selectedWaveLength = "030";
+        final String selectedDate = "20081031T0000000";
+        for (ParameterDescriptor param : params) {
+            if (param.getName().getCode().equalsIgnoreCase("DATE")) {
+                dateValue = param.createValue();
+                dateValue.setValue(new ArrayList<String>() {
+                    {
+                        add(selectedDate);
+                    }
+                });
+            } else if (param.getName().getCode().equalsIgnoreCase("DEPTH")) {
+                depthValue = param.createValue();
+                depthValue.setValue(new ArrayList<String>() {
+                    {
+                        add(selectedWaveLength);
+                    }
+                });
+            }
+        }        
+        assertNotNull(depthValue);
+        assertNotNull(dateValue);
+        // Test the output coverage
+        GeneralParameterValue[] values = new GeneralParameterValue[] { useJai, time, dateValue, depthValue };
+        final GridCoverage2D coverage = TestUtils.getCoverage(reader, values, false);
+        assertNull(coverage);
+    }
+
+    /**
+     * Simple test method accessing time and 2 custom dimensions for the sample
+     * dataset
+     * @throws IOException
+     * @throws FactoryException 
+     * @throws NoSuchAuthorityCodeException 
+     * @throws ParseException +
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    public void multipleDimensionsStackedSar() throws Exception {
+    
+        final URL sourceURL=TestData.file(this, "merge").toURI().toURL();
+        final AbstractGridFormat format = TestUtils.getFormat(sourceURL);
+        ImageMosaicReader reader = TestUtils.getReader(sourceURL,format);
+    
+        final String[] metadataNames = reader.getMetadataNames();
+        assertNotNull(metadataNames);
+        assertEquals(12,metadataNames.length);
+        assertEquals("false", reader.getMetadataValue("HAS_POLARIZ_DOMAIN"));
+        assertEquals("true", reader.getMetadataValue("HAS_POLARIZATION_DOMAIN"));
+        assertEquals("POLARIZATION", reader.getDynamicParameters().iterator().next().getName().getCode());
+        assertEquals("HH,HV,VH,VV",reader.getMetadataValue("POLARIZATION_DOMAIN"));// ten characters limitation overcome!
+        assertEquals("true", reader.getMetadataValue("HAS_TIME_DOMAIN"));
+        assertEquals("false", reader.getMetadataValue("HAS_ELEVATION_DOMAIN"));
+        assertEquals("2012-01-01T00:00:00.000Z",reader.getMetadataValue("TIME_DOMAIN"));
+        assertEquals("2012-01-01T00:00:00.000Z",reader.getMetadataValue("TIME_DOMAIN_MINIMUM"));
+        assertEquals("2012-01-01T00:00:00.000Z",reader.getMetadataValue("TIME_DOMAIN_MAXIMUM"));
+    
+        // use imageio with defined tiles
+        final ParameterValue<Boolean> useJai = AbstractGridFormat.USE_JAI_IMAGEREAD.createValue();
+        useJai.setValue(false);
+        final ParameterValue<String> tileSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue();
+        tileSize.setValue("128,128");
+    
+        // specify time
+        final ParameterValue<List> time = ImageMosaicFormat.TIME.createValue();
+        final SimpleDateFormat formatD = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        formatD.setTimeZone(TimeZone.getTimeZone("GMT"));
+        final Date timeD = formatD.parse("2012-01-01T00:00:00.000Z");
+        time.setValue(new ArrayList() {
+            {
+                add(timeD);
+            }
+        });
+    
+        // specify additional Dimensions
+        Set<ParameterDescriptor<List>> params = reader.getDynamicParameters();
+        ParameterValue<List<String>> polariz = null;
+        for (ParameterDescriptor param : params) {
+            if (param.getName().getCode().equalsIgnoreCase("POLARIZATION")) {
+                polariz = param.createValue();
+                polariz.setValue(new ArrayList<String>() {
+                    {
+                        add("HH");
+                        add("HV");
+                        add("VV");
+                    }
+                });
+            } 
+        }
+        
+        // Stacked bands
+        final ParameterValue<String> paramStacked = ImageMosaicFormat.MERGE_BEHAVIOR.createValue();
+        paramStacked.setValue(MergeBehavior.STACK.toString());
+        
+        // Test the output coverage
+        GeneralParameterValue[] values = new GeneralParameterValue[] { useJai,tileSize, time, polariz,paramStacked };
+        final GridCoverage2D coverage = TestUtils.getCoverage(reader, values, false);
+        assertNotNull(coverage);
+        
+        // inspect reanderedImage
+        final RenderedImage image= coverage.getRenderedImage();
+        assertEquals("wrong number of bands detected",3,image.getSampleModel().getNumBands());
+        assertEquals(DataBuffer.TYPE_SHORT, image.getSampleModel().getDataType());
+//        ImageIO.write(image, "TIFF", new File("C:\\test.tif"));
+    }
+
+    @AfterClass
+	public static void close(){
+		System.clearProperty("org.geotools.referencing.forceXY");
 	}
 
 

@@ -18,6 +18,7 @@ package org.geotools.gce.imagemosaic;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
@@ -56,8 +57,13 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.media.jai.BorderExtender;
 import javax.media.jai.Histogram;
+import javax.media.jai.ImageLayout;
+import javax.media.jai.JAI;
 import javax.media.jai.RasterFactory;
+import javax.media.jai.TileCache;
+import javax.media.jai.TileScheduler;
 import javax.media.jai.remote.SerializableRenderedImage;
 
 import net.sf.ehcache.Cache;
@@ -869,8 +875,9 @@ public class Utils {
 		final Param[] paramsInfo = spi.getParametersInfo();
 		for (Param p : paramsInfo) {
 			// search for this param and set the value if found
-			if (properties.containsKey(p.key))
-				params.put(p.key, (Serializable) Converters.convert(properties.getProperty(p.key), p.type));
+			if (properties.containsKey(p.key)){
+			    params.put(p.key, (Serializable) Converters.convert(properties.getProperty(p.key), p.type));
+			}
 			else if (p.required && p.sample == null)
 				throw new IOException("Required parameter missing: "+ p.toString());
 		}
@@ -1301,4 +1308,36 @@ public class Utils {
 	    // turn it into a rectangle
 	    return new Rectangle2D.Double(minx, miny, maxx - minx, maxy - miny).getBounds();
 	}
+
+    public static ImageLayout getImageLayoutHint(RenderingHints renderHints) {
+        if (renderHints == null||!renderHints.containsKey(JAI.KEY_IMAGE_LAYOUT)) {
+            return null;
+        } else {
+            return (ImageLayout) renderHints.get(JAI.KEY_IMAGE_LAYOUT);
+        }
+    }
+
+    public static TileCache getTileCacheHint(RenderingHints renderHints) {
+        if (renderHints == null||!renderHints.containsKey(JAI.KEY_TILE_CACHE)) {
+            return null;
+        } else {
+            return (TileCache) renderHints.get(JAI.KEY_TILE_CACHE);
+        }
+    }
+
+    public static BorderExtender getBorderExtenderHint(RenderingHints renderHints) {
+        if (renderHints == null||!renderHints.containsKey(JAI.KEY_BORDER_EXTENDER)) {
+            return null;
+        } else {
+            return (BorderExtender) renderHints.get(JAI.KEY_BORDER_EXTENDER);
+        }
+    }
+    
+    public static TileScheduler getTileSchedulerHint(RenderingHints renderHints) {
+        if (renderHints == null||!renderHints.containsKey(JAI.KEY_TILE_SCHEDULER)) {
+            return null;
+        } else {
+            return (TileScheduler) renderHints.get(JAI.KEY_TILE_SCHEDULER);
+        }
+    }
 }

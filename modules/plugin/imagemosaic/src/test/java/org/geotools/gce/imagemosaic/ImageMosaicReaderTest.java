@@ -65,6 +65,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opengis.geometry.Envelope;
 import org.opengis.geometry.MismatchedDimensionException;
@@ -128,7 +129,7 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws FactoryException
 	 */
 	@Test
-        //@Ignore	
+//        @Ignore	
 	public void crop() throws MismatchedDimensionException, IOException,
 			FactoryException {
 		imageMosaicCropTest(rgbURL, "crop-rgbURL");
@@ -156,7 +157,7 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws FactoryException 
 	 */
 	@Test
-        //@Ignore	
+//        @Ignore	
 	public void alpha() throws IOException,
 			MismatchedDimensionException, FactoryException {
 		
@@ -229,7 +230,7 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws FactoryException 
 	 */
 	@Test
-	//@Ignore
+//	@Ignore
 	public void overviews() throws IOException,	
 			MismatchedDimensionException, FactoryException {
 		final AbstractGridFormat format = TestUtils.getFormat(overviewURL);
@@ -260,19 +261,19 @@ public class ImageMosaicReaderTest extends Assert{
 	    //@Ignore
 	public void timeElevationH2() throws Exception {
 	    
-    	final File workDir=new File(TestData.file(this, "."),"water temp3");
+    	final File workDir=new File(TestData.file(this, "."),"water_temp3");
         if(!workDir.mkdir()){
             FileUtils.deleteDirectory(workDir);
             assertTrue("Unable to create workdir:"+workDir,workDir.mkdir());
         }
     	FileUtils.copyFile(TestData.file(this, "watertemp.zip"), new File(workDir,"watertemp.zip"));
-    	TestData.unzipFile(this, "water temp3/watertemp.zip");
-	    final URL timeElevURL = TestData.url(this, "water temp3");
+    	TestData.unzipFile(this, "water_temp3/watertemp.zip");
+	    final URL timeElevURL = TestData.url(this, "water_temp3");
 	    
 	    //place H2 file in the dir
 	    FileWriter out=null;
 	    try{
-	    	out = new FileWriter(new File(TestData.file(this, "."),"/water temp3/datastore.properties"));
+	    	out = new FileWriter(new File(TestData.file(this, "."),"/water_temp3/datastore.properties"));
 	    	out.write("SPI=org.geotools.data.h2.H2DataStoreFactory\n");
 	    	out.write("database=imagemosaic\n");
 	    	out.write("dbtype=h2\n");
@@ -359,12 +360,12 @@ public class ImageMosaicReaderTest extends Assert{
                 
          // clean up
          if (!INTERACTIVE){        	
-         	FileUtils.deleteDirectory( TestData.file(this, "water temp3"));
+         	FileUtils.deleteDirectory( TestData.file(this, "water_temp3"));
          }
 	}	
 
 	@Test
-	//@Ignore
+//	@Ignore
 	public void timeElevation() throws IOException, ParseException, NoSuchAuthorityCodeException, FactoryException {
     	final File workDir=new File(TestData.file(this, "."),"watertemp2");
     	if(!workDir.mkdir()){
@@ -457,7 +458,7 @@ public class ImageMosaicReaderTest extends Assert{
          * @throws NoSuchAuthorityCodeException
          */
         @Test
-        //@Ignore
+//        @Ignore
         public void timeDoubleElevation() throws IOException, ParseException, NoSuchAuthorityCodeException, FactoryException {
                 // Check we can have an integer elevation too 
         	final File workDir=new File(TestData.file(this, "."),"watertemp1");
@@ -518,7 +519,7 @@ public class ImageMosaicReaderTest extends Assert{
         }
 	
 	@Test
-    //@Ignore	
+//    @Ignore	
 	public void imposedBBox() throws IOException, NoSuchAuthorityCodeException, FactoryException {
 		final AbstractGridFormat format = TestUtils.getFormat(imposedEnvelopeURL);
 		final ImageMosaicReader reader = TestUtils.getReader(imposedEnvelopeURL, format);
@@ -561,7 +562,7 @@ public class ImageMosaicReaderTest extends Assert{
 	 * @throws ParseException 
 	 */
 	@Test
-	//@Ignore
+//	@Ignore
 	public void time() throws IOException, NoSuchAuthorityCodeException, FactoryException, ParseException {
 	       
 		final AbstractGridFormat format = TestUtils.getFormat(timeURL);
@@ -783,8 +784,6 @@ public class ImageMosaicReaderTest extends Assert{
         assertNotNull(dateValue);
         
         // Test the output coverage
-        
-        //TODO: need to understand why the ranges filtering doesn't return any feature.
         GeneralParameterValue[] values = new GeneralParameterValue[] { useJai, dateValue, time, waveLength, elevation};
         final GridCoverage2D coverage = TestUtils.getCoverage(reader, values, true);
         final String fileSource = (String) coverage

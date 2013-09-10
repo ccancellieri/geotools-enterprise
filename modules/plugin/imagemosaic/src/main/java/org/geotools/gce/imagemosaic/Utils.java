@@ -92,6 +92,7 @@ import org.geotools.util.Converters;
 import org.geotools.util.Range;
 import org.geotools.util.Utilities;
 import org.opengis.filter.spatial.BBOX;
+import org.opengis.geometry.BoundingBox;
 
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -168,24 +169,27 @@ public class Utils {
      * @author Simone Giannecchini, GeoSolutions SAS.
      * @todo TODO use other spatial filters as well
      */
-    public static class BBOXFilterExtractor extends DefaultFilterVisitor{
-    
-    	public ReferencedEnvelope getBBox() {
-    		return bbox;
-    	}
-    	private ReferencedEnvelope bbox;
-    	@Override
-    	public Object visit(BBOX filter, Object data) {
-    		final ReferencedEnvelope bbox= ReferencedEnvelope.reference(filter.getBounds());
-    		if(this.bbox!=null){
-    		    this.bbox=(ReferencedEnvelope) this.bbox.intersection(bbox);
-    		}
-    		else{
-    		    this.bbox=bbox;
-    		}
-    		return super.visit(filter, data);
-    	}
-    	
+    public static class BBOXFilterExtractor extends DefaultFilterVisitor {
+
+        public ReferencedEnvelope getBBox() {
+            return bbox;
+        }
+
+        private ReferencedEnvelope bbox;
+
+        @Override
+        public Object visit(BBOX filter, Object data) {
+            final ReferencedEnvelope bbox = new ReferencedEnvelope(filter.getMinX(),
+                    filter.getMaxX(), filter.getMinY(), filter.getMaxY(), null);
+
+            if (this.bbox != null) {
+                this.bbox = (ReferencedEnvelope) this.bbox.intersection(bbox);
+            } else {
+                this.bbox = bbox;
+            }
+            return super.visit(filter, data);
+        }
+
     }
         /**
 	 * Logger.

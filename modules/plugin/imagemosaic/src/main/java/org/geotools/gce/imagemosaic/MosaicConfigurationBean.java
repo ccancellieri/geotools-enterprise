@@ -90,7 +90,7 @@ public class MosaicConfigurationBean {
         private String additionalDomainAttributes;
 
         /** The typename to use for the mosaic index*/
-        /** 
+
 	private String typeName;
 	
     public String getTypeName() {

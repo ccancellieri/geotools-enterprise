@@ -41,10 +41,8 @@ class DateRangeVisitor extends RangeVisitor {
         final Object firstValue = expr1.evaluate(feature);
         final Object secondValue = expr2.evaluate(feature);
         if (firstValue != null && secondValue != null) {
-            final long begin = ((Timestamp) firstValue).getTime();
-            final long end = ((Timestamp) secondValue).getTime();
-            final Date beginDate = new Date(begin);
-            final Date endDate = new Date(end);
+            final Date beginDate = (Date) firstValue;
+            final Date endDate = (Date) secondValue;
             set.add(new DateRange(beginDate, endDate));
         }
     }
@@ -69,11 +67,17 @@ class DateRangeVisitor extends RangeVisitor {
                     second = merge(first, second);
                     if (!iterator.hasNext()) {
                         minimalRanges.add(formatRange(second));
+                        second = null;
                     }
                 } else {
-                    minimalRanges.add(formatRange(second));
+                    minimalRanges.add(formatRange(first));
+                    first = null;
                 }
             }
+        }
+        
+        if(second != null) {
+            minimalRanges.add(formatRange(second));
         }
     }
 

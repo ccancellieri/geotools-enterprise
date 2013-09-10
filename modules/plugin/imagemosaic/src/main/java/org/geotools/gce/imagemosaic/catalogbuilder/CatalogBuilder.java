@@ -511,14 +511,20 @@ public class CatalogBuilder implements Runnable {
 					
 					// create the schema for the new shape file
 					final SimpleFeatureType type = catalog.getType();
-                                        if(type==null){
-					    catalog.createType(indexSchema);
-					} else {
-					    // remove them all, assuming the schema has not changed
-					    final Query query = new Query(type.getTypeName());
-					    query.setFilter(Filter.INCLUDE);
-					    catalog.removeGranules(query);
-					}
+					try{
+                                            if(type==null){
+                                                catalog.createType(indexSchema);
+                                            } else {
+                                                // remove them all, assuming the schema has not changed
+                                                final Query query = new Query(type.getTypeName());
+                                                query.setFilter(Filter.INCLUDE);
+                                                catalog.removeGranules(query);
+                                            }
+                                        } catch (Exception e) {
+                                            // ignore exception
+                                            if(LOGGER.isLoggable(Level.FINEST))
+                                                    LOGGER.log(Level.FINEST,e.getLocalizedMessage(),e);
+                                        }
 					
 				} else {
 				    if (!mosaicConfiguration.isHeterogeneous()){
@@ -590,8 +596,14 @@ public class CatalogBuilder implements Runnable {
 						pc.collect(fileBeingProcessed).collect(coverageReader).collect(imageioReader).setProperties(feature);
 						pc.reset();
 					}
-
-				catalog.addGranule(feature,transaction);
+				
+				try{
+				    catalog.addGranule(feature,transaction);
+            			} catch (Exception e) {
+                                    // ignore exception
+                                    if(LOGGER.isLoggable(Level.FINEST))
+                                            LOGGER.log(Level.FINEST,e.getLocalizedMessage(),e);
+            			}
 
 				// fire event
 				fireEvent(Level.FINE,"Done with file "+fileBeingProcessed, (((fileIndex + 1) * 99.0) / numFiles));
@@ -1328,6 +1340,11 @@ public class CatalogBuilder implements Runnable {
 				// create a datastore as instructed
 				final DataStoreFactorySpi spi = (DataStoreFactorySpi) Class.forName(SPIClass).newInstance();
 				final Map<String, Serializable> params = Utils.createDataStoreParamsFromPropertiesFile(properties,spi);
+
+			            // set ParentLocation parameter since for embedded database like H2 we must change the database
+			            // to incorporate the path where to write the db
+			            params.put("ParentLocation", DataUtilities.fileToURL(parent).toExternalForm());
+
 				catalog=GranuleCatalogFactory.createGranuleCatalog(params,false,true, spi);
 			} catch (ClassNotFoundException e) {
 				final IOException ioe = new IOException();

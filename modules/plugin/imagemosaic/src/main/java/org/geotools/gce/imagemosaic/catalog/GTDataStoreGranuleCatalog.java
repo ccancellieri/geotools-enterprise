@@ -44,6 +44,8 @@ import org.geotools.data.FeatureWriter;
 import org.geotools.data.Query;
 import org.geotools.data.QueryCapabilities;
 import org.geotools.data.Transaction;
+import org.geotools.data.h2.H2DataStoreFactory;
+import org.geotools.data.h2.H2JNDIDataStoreFactory;
 import org.geotools.data.postgis.PostgisNGDataStoreFactory;
 import org.geotools.data.postgis.PostgisNGJNDIDataStoreFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;

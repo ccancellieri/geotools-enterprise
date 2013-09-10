@@ -44,6 +44,8 @@ import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.io.DecimationPolicy;
+import org.geotools.coverage.grid.io.DefaultDimensionDescriptor;
+import org.geotools.coverage.grid.io.DimensionDescriptor;
 import org.geotools.coverage.grid.io.OverviewPolicy;
 import org.geotools.data.DataSourceException;
 import org.geotools.data.DataUtilities;
@@ -63,12 +65,14 @@ import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.parameter.DefaultParameterDescriptor;
 import org.geotools.referencing.CRS;
+import org.geotools.resources.coverage.CoverageUtilities;
 import org.geotools.resources.coverage.FeatureUtilities;
 import org.geotools.resources.image.ImageUtilities;
 import org.geotools.util.Range;
 import org.geotools.util.Utilities;
 import org.opengis.coverage.grid.GridCoverage;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
 import org.opengis.filter.expression.PropertyName;
@@ -208,6 +212,8 @@ class RasterManager {
 
         static final String HAS_PREFIX = "HAS_";
 
+        static final String DATATYPE_SUFFIX = "_DATATYPE";
+
         static final String TIME_DOMAIN = "TIME";
 
         static final String ELEVATION_DOMAIN = "ELEVATION";
@@ -223,6 +229,9 @@ class RasterManager {
         /** additionalPropertyName for this domain. It won't be null ONLY in case of ranged domains. */
         private final String additionalPropertyName;
 
+        /** domain dataType */
+        private final String dataType;
+
         /** The {@link ParameterDescriptor} that can be used to filter on this domain during a read operation. */
         private final DefaultParameterDescriptor<List> domainParameterDescriptor;
 
@@ -237,6 +246,10 @@ class RasterManager {
             return additionalPropertyName != null;
         }
 
+        public String getDataType() {
+            return dataType;
+        }
+
         /**
          * @return the domainaParameterDescriptor
          */
@@ -244,11 +257,12 @@ class RasterManager {
             return domainParameterDescriptor;
         }
 
-        private DomainDescriptor(final String identifier, final DomainType domainType, 
+        private DomainDescriptor(final String identifier, final DomainType domainType, final String dataType,
                 final String propertyName, final String additionalPropertyName) {
             this.identifier = identifier;
             this.propertyName = propertyName;
             this.domainType = domainType;
+            this.dataType = dataType;
             this.additionalPropertyName = additionalPropertyName;
             final String name = identifier.toUpperCase();
             this.domainParameterDescriptor=
@@ -478,6 +492,8 @@ class RasterManager {
     class DomainManager {
 
         private final Map<String, DomainDescriptor> domainsMap = new HashMap<String, DomainDescriptor>();
+        
+        private final List<DimensionDescriptor> dimensions = new ArrayList<DimensionDescriptor>();
 
         private final boolean attributeHasRange(String attribute) {
             return attribute.contains(Utils.RANGE_SPLITTER_CHAR);
@@ -509,11 +525,11 @@ class RasterManager {
                     if (attributeHasRange(propertyName)) {
                         domainType = domainAttributes.containsKey(DomainDescriptor.TIME_DOMAIN) ? DomainType.TIME_RANGE
                                 : DomainType.NUMBER_RANGE;
-                        addDomain(domainName, propertyName, domainType);
+                        addDomain(domainName, propertyName, domainType, simpleFeatureType);
                         continue;
                     } else if (simpleFeatureType.getDescriptor(propertyName) != null) {
                         // add
-                        addDomain(domainName, propertyName, domainType);
+                        addDomain(domainName, propertyName, domainType, simpleFeatureType);
 
                         // continue
                         continue;
@@ -533,7 +549,7 @@ class RasterManager {
                     try {
                         if (simpleFeatureType.getDescriptor(propertyName) != null) {
                             // add
-                            addDomain(domainName, propertyName, domainType);
+                            addDomain(domainName, propertyName, domainType, simpleFeatureType);
 
                             // continue
                             continue;
@@ -601,7 +617,7 @@ class RasterManager {
          * @param domain the name of the domain
          * @param propertyName
          */
-        private void addDomain(String name, String propertyName, final DomainType domainType) {
+        private void addDomain(String name, String propertyName, final DomainType domainType, final SimpleFeatureType featureType) {
             Utilities.ensureNonNull("name", name);
             Utilities.ensureNonNull("propertyName", propertyName);
 
@@ -638,8 +654,22 @@ class RasterManager {
 
             // ad with uppercase and with suffix, the parameter that describes it will match this
             final String upperCase = name.toUpperCase();
+            final AttributeDescriptor descriptor = featureType.getDescriptor(basePropertyName);
+            final String type = descriptor.getType().getBinding().getName();
             domainsMap.put(upperCase + DomainDescriptor.DOMAIN_SUFFIX, new DomainDescriptor(name,
-                    domainType, basePropertyName, additionalPropertyName));
+                    domainType, type, basePropertyName, additionalPropertyName));
+            addDimensionDescriptor(name, upperCase, basePropertyName, additionalPropertyName);
+        }
+        
+        private void addDimensionDescriptor(String name, String upperCase, String basePropertyName, String additionalPropertyName) {
+            final String unitsName = upperCase.equalsIgnoreCase(DomainDescriptor.TIME_DOMAIN) ? CoverageUtilities.UCUM.TIME_UNITS.getName() 
+                    : upperCase.equalsIgnoreCase(DomainDescriptor.ELEVATION_DOMAIN) ? CoverageUtilities.UCUM.ELEVATION_UNITS.getName() : 
+                        "FIXME"; //TODO: ADD UCUM units Management
+            final String unitsSymbol = upperCase.equalsIgnoreCase(DomainDescriptor.TIME_DOMAIN) ? CoverageUtilities.UCUM.TIME_UNITS.getSymbol() 
+                    : upperCase.equalsIgnoreCase(DomainDescriptor.ELEVATION_DOMAIN) ? CoverageUtilities.UCUM.ELEVATION_UNITS.getSymbol() : 
+                        "FIXME"; //TODO: ADD UCUM units Management
+            final DimensionDescriptor dimensionDescriptor = new DefaultDimensionDescriptor(name, unitsName, unitsSymbol, basePropertyName, additionalPropertyName);
+            dimensions.add(dimensionDescriptor);
         }
 
         /**
@@ -672,6 +702,9 @@ class RasterManager {
                 for (DomainDescriptor domain : domainsMap.values()) {
                     String domainName = domain.getIdentifier().toUpperCase();
                     metadataNames.add(domainName + DomainDescriptor.DOMAIN_SUFFIX);
+                    if (domain.getDataType() != null) {
+                        metadataNames.add(domainName + DomainDescriptor.DOMAIN_SUFFIX + DomainDescriptor.DATATYPE_SUFFIX);
+                    }
                     metadataNames.add(DomainDescriptor.HAS_PREFIX + domainName
                             + DomainDescriptor.DOMAIN_SUFFIX);
                 }
@@ -704,6 +737,8 @@ class RasterManager {
                         } else {
                             return Boolean.toString(Boolean.FALSE);
                         }
+                    } else if (name.endsWith(DomainDescriptor.DATATYPE_SUFFIX)) { 
+                        return domainsMap.get(name.substring(0, name.lastIndexOf(DomainDescriptor.DATATYPE_SUFFIX))).getDataType();
                     } else {
                         // MINUM or MAXIMUM
                         if (name.endsWith("MINIMUM") || name.endsWith("MAXIMUM")) {
@@ -800,6 +835,8 @@ class RasterManager {
     DomainManager elevationDomainManager;
 
     DomainManager timeDomainManager;
+    
+    List<DimensionDescriptor> dimensionDescriptors = new ArrayList<DimensionDescriptor>();
 
     public RasterManager(final ImageMosaicReader reader) throws IOException{
         this(reader, null);
@@ -851,6 +888,7 @@ class RasterManager {
             final SimpleFeatureType schema = granuleCatalog.getType();
             if (configuration.getAdditionalDomainAttributes() != null) {
                 domainsManager = new DomainManager(configuration.getAdditionalDomainAttributes(),schema);
+                dimensionDescriptors.addAll(domainsManager.dimensions);
             }
             
             // time attribute
@@ -858,12 +896,14 @@ class RasterManager {
                 final HashMap<String, String> init=new HashMap<String, String>();
                 init.put(DomainDescriptor.TIME_DOMAIN, configuration.getTimeAttribute());
                 timeDomainManager= new DomainManager(init,schema);
+                dimensionDescriptors.addAll(timeDomainManager.dimensions);
             }
             // elevation attribute
             if(configuration.getElevationAttribute()!=null){
                 final HashMap<String, String> init=new HashMap<String, String>();
                 init.put(DomainDescriptor.ELEVATION_DOMAIN, configuration.getElevationAttribute());
                 elevationDomainManager= new DomainManager(init,schema);
+                dimensionDescriptors.addAll(elevationDomainManager.dimensions);
             }        
         }
       }
@@ -1109,6 +1149,10 @@ class RasterManager {
             granuleCatalog.computeAggregateFunction(query, visitor);
             return domainType == DomainType.TIME_RANGE ? ((DateRangeVisitor)visitor).getRange() : ((RangeVisitor)visitor).getRange() ;
             
+        }
+        
+        public List<DimensionDescriptor> getDimensionDescriptors() {
+            return dimensionDescriptors;
         }
 
 }

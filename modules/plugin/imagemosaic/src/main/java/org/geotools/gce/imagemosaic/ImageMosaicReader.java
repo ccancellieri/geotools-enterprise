@@ -44,6 +44,7 @@ import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.data.DataSourceException;
 import org.geotools.data.DataUtilities;
 import org.geotools.factory.Hints;
+import org.geotools.gce.imagemosaic.RasterManager.DomainDescriptor;
 import org.geotools.gce.imagemosaic.catalog.GranuleCatalog;
 import org.geotools.gce.imagemosaic.catalog.GranuleCatalogFactory;
 import org.geotools.geometry.GeneralEnvelope;
@@ -642,16 +643,35 @@ public class ImageMosaicReader extends AbstractGridCoverage2DReader implements G
 	public String[] getMetadataNames() {
 	    final String []parentNames = super.getMetadataNames();
             final List<String> metadataNames = new ArrayList<String>();
+//            if (rasterManager.timeDomainManager != null) {
+//                metadataNames.addAll(rasterManager.timeDomainManager.getMetadataNames());
+//            }
+//            metadataNames.add(TIME_DOMAIN_MINIMUM);
+//            metadataNames.add(TIME_DOMAIN_MAXIMUM);
+//            metadataNames.add(TIME_DOMAIN_RESOLUTION);
+//            
+//            if (rasterManager.elevationDomainManager != null) {
+//                metadataNames.addAll(rasterManager.elevationDomainManager.getMetadataNames());
+//                
+//            }
+//            metadataNames.add(ELEVATION_DOMAIN_MINIMUM);
+//            metadataNames.add(ELEVATION_DOMAIN_MAXIMUM);
+//            metadataNames.add(ELEVATION_DOMAIN_RESOLUTION);
+            
             metadataNames.add(TIME_DOMAIN);
             metadataNames.add(HAS_TIME_DOMAIN);
             metadataNames.add(TIME_DOMAIN_MINIMUM);
             metadataNames.add(TIME_DOMAIN_MAXIMUM);
             metadataNames.add(TIME_DOMAIN_RESOLUTION);
+            metadataNames.add(TIME_DOMAIN + DomainDescriptor.DATATYPE_SUFFIX);
+
             metadataNames.add(ELEVATION_DOMAIN);
             metadataNames.add(ELEVATION_DOMAIN_MINIMUM);
             metadataNames.add(ELEVATION_DOMAIN_MAXIMUM);
             metadataNames.add(HAS_ELEVATION_DOMAIN);
             metadataNames.add(ELEVATION_DOMAIN_RESOLUTION);
+            metadataNames.add(ELEVATION_DOMAIN + DomainDescriptor.DATATYPE_SUFFIX);
+            
             if (rasterManager.domainsManager != null) {
                 metadataNames.addAll(rasterManager.domainsManager.getMetadataNames());
             }
@@ -693,6 +713,9 @@ public class ImageMosaicReader extends AbstractGridCoverage2DReader implements G
                 if ((name.equalsIgnoreCase("time_domain_minimum") || name.equalsIgnoreCase("time_domain_maximum"))) {
                     return rasterManager.timeDomainManager.getMetadataValue(name);
                 }
+                if (name.equalsIgnoreCase("time_domain_datatype")) {
+                    return rasterManager.timeDomainManager.getMetadataValue(name);
+                }
             }
             
             
@@ -704,7 +727,9 @@ public class ImageMosaicReader extends AbstractGridCoverage2DReader implements G
                 if(name.equalsIgnoreCase("elevation_domain_minimum") || name.equalsIgnoreCase("elevation_domain_maximum")){
                     return rasterManager.elevationDomainManager.getMetadataValue(name);
                 }
-    
+                if (name.equalsIgnoreCase("elevation_domain_datatype")) {
+                    return rasterManager.elevationDomainManager.getMetadataValue(name);
+                }
             }
  
         		
